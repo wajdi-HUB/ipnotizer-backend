@@ -28,7 +28,7 @@ exports.create = (req,res) =>{
     });
 };
 exports.findAll = (req,res)=>{
-    user.find()
+    User.find()
     .then(users =>{
         res.send({status:'200',message:"All the users",users});
     }).catch(err =>{
@@ -115,4 +115,37 @@ exports.update =(req,res) =>{
                     message:"Error retrieving user with id "+req.params.userId
                 });
             });
+        };
+        exports.login = (req, res, next) => {
+            User.findOne({ userName: req.body.userName })
+                .then(user => {
+                    if (!user) {
+                        return res.status(401).json({ error: 'User Not found !' });
+                    }
+                    console.log(user)
+                    bcrypt.compare(req.body.password, user.password)
+                        .then(valid => {
+                            if (!valid) {
+                                return res.status(401).json({ error: 'incorrect password !' });//401 Unauthorized
+                            }
+                            let role = "user"
+                            if (req.body.userName === "admin")
+                                role = "admin"
+        
+        
+                            res.status(200).json({
+                                user: user,
+                                token: jwt.sign(
+                                    { userId: user._id },
+                                    'RANDOM_TOKEN_SECRET',
+                                    { expiresIn: '24h' }
+                                ),
+                                role: role
+                            });
+                        })
+                        .catch(error => res.status(500).json({ error }));
+                })
+                .catch(error => res.status(500).json({ error }));
+        
+        
         };
